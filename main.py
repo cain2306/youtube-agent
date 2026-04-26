@@ -15,7 +15,9 @@ vertexai.init(
 )
 
 # ✅ MODELO ESTABLE (NO USAR gemini-3-pro)
-model = GenerativeModel("gemini-1.5-flash")
+model = GenerativeModel(
+    "projects/youtube-ai-docker/locations/us-central1/publishers/google/models/gemini-1.5-pro"
+)
 
 # 🧠 UI SIMPLE
 HTML = """
