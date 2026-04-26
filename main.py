@@ -6,9 +6,9 @@ from vertexai.generative_models import GenerativeModel
 app = Flask(__name__)
 
 # 🔥 Inicializar Vertex AI (Google Gemini)
-vertexai.init(project=os.environ.get("GOOGLE_CLOUD_PROJECT"), location="us-central1")
+vertexai.init(project="youtube-ai-docker", location="us-central1")
 
-model = GenerativeModel("gemini-1.5-flash")
+model = GenerativeModel("gemini-3-pro")
 
 HTML = """
 <h1>YouTube AI Agent 🚀</h1>
