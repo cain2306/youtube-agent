@@ -5,7 +5,7 @@ from vertexai.generative_models import GenerativeModel
 
 app = Flask(__name__)
 
-# 🔥 CONFIG VERTEX AI (PROYECTO ÚNICO)
+# 🔥 CONFIGURACIÓN VERTEX AI
 PROJECT_ID = "youtube-ai-docker"
 LOCATION = "us-central1"
 
@@ -14,12 +14,12 @@ vertexai.init(
     location=LOCATION
 )
 
-# ✅ MODELO ESTABLE (NO USAR gemini-3-pro)
-model = GenerativeModel(
-    "projects/youtube-ai-docker/locations/us-central1/publishers/google/models/gemini-1.5-pro"
-)
+# ⚠️ USAMOS FULL PATH (EVITA 404 DE MODELO)
+MODEL_NAME = "projects/youtube-ai-docker/locations/us-central1/publishers/google/models/gemini-1.5-pro"
 
-# 🧠 UI SIMPLE
+model = GenerativeModel(MODEL_NAME)
+
+# 🧠 INTERFAZ WEB SIMPLE
 HTML = """
 <!DOCTYPE html>
 <html>
@@ -30,7 +30,7 @@ HTML = """
     <h1>🔥 YouTube AI Agent</h1>
 
     <form method="post">
-        <textarea name="prompt" rows="10" cols="80" placeholder="Escribe tu idea aquí..."></textarea><br><br>
+        <textarea name="prompt" rows="10" cols="80" placeholder="Escribe tu idea..."></textarea><br><br>
         <button type="submit">Generar</button>
     </form>
 
@@ -53,7 +53,7 @@ def home():
             full_prompt = f"""
 Eres un experto en viralidad de YouTube en 2026.
 
-Devuelve en formato claro:
+Devuelve:
 
 1. Título CTR máximo (muy viral)
 2. Hook de 15 segundos
@@ -68,11 +68,12 @@ Tema:
             response = result.text
 
     except Exception as e:
-        # 🔥 EVITA CRASH TOTAL EN CLOUD RUN
+        # 🔥 EVITA CRASH EN CLOUD RUN
         response = f"Error interno: {str(e)}"
 
     return render_template_string(HTML, response=response)
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
