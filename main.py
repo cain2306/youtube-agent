@@ -5,7 +5,7 @@ from vertexai.generative_models import GenerativeModel
 
 app = Flask(__name__)
 
-# 🔥 CONFIGURACIÓN VERTEX AI
+# 🔥 CONFIG VERTEX AI
 PROJECT_ID = "youtube-ai-docker"
 LOCATION = "us-central1"
 
@@ -14,12 +14,9 @@ vertexai.init(
     location=LOCATION
 )
 
-# ⚠️ USAMOS FULL PATH (EVITA 404 DE MODELO)
-MODEL_NAME = "projects/youtube-ai-docker/locations/us-central1/publishers/google/models/gemini-1.5-pro"
+# 🚀 MODELO MÁS POTENTE REAL EN VERTEX AI
+model = GenerativeModel("gemini-2.5-pro")
 
-model = GenerativeModel(MODEL_NAME)
-
-# 🧠 INTERFAZ WEB SIMPLE
 HTML = """
 <!DOCTYPE html>
 <html>
@@ -55,7 +52,7 @@ Eres un experto en viralidad de YouTube en 2026.
 
 Devuelve:
 
-1. Título CTR máximo (muy viral)
+1. Título CTR máximo
 2. Hook de 15 segundos
 3. Idea del vídeo
 4. Descripción de miniatura
@@ -68,7 +65,6 @@ Tema:
             response = result.text
 
     except Exception as e:
-        # 🔥 EVITA CRASH EN CLOUD RUN
         response = f"Error interno: {str(e)}"
 
     return render_template_string(HTML, response=response)
