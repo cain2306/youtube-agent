@@ -5,9 +5,13 @@ from vertexai.generative_models import GenerativeModel
 
 app = Flask(__name__)
 
-# 🔥 Inicializar Vertex AI (Google Gemini)
-vertexai.init(project="youtube-ai-docker", location="us-central1")
+# 🔥 INIT VERTEX AI
+vertexai.init(
+    project="youtube-ai-docker",
+    location="us-central1"
+)
 
+# ✅ MODELO CORRECTO
 model = GenerativeModel("gemini-1.5-pro")
 
 HTML = """
@@ -19,7 +23,7 @@ HTML = """
 
 <hr>
 <h2>Respuesta:</h2>
-<p>{{response}}</p>
+<pre>{{response}}</pre>
 """
 
 @app.route("/", methods=["GET", "POST"])
@@ -31,12 +35,12 @@ def home():
 
         full_prompt = f"""
 Eres un experto en viralidad de YouTube en 2026.
-Devuelve:
 
+Devuelve:
 1. Título CTR máximo
 2. Hook de 15 segundos
 3. Idea del vídeo
-4. Miniatura descripción
+4. Descripción de miniatura
 
 Tema: {prompt}
 """
