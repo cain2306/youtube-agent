@@ -1,75 +1,120 @@
 import os
-from flask import Flask, request, render_template_string
+from flask import Flask, request, jsonify, render_template_string
 import vertexai
 from vertexai.generative_models import GenerativeModel
 
 app = Flask(__name__)
 
-# 🔥 CONFIG VERTEX AI
-PROJECT_ID = "youtube-ai-docker"
+# =========================
+# CONFIG VERTEX AI
+# =========================
+PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "youtube-ai-docker")
 LOCATION = "us-central1"
 
-vertexai.init(
-    project=PROJECT_ID,
-    location=LOCATION
-)
+vertexai.init(project=PROJECT_ID, location=LOCATION)
 
-# 🚀 MODELO MÁS POTENTE REAL EN VERTEX AI
-model = GenerativeModel("gemini-2.5-pro")
+# 🔥 TU MODELO (el que te funciona)
+MODEL_NAME = "gemini-2.5-pro"
 
-HTML = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>YouTube AI Agent</title>
-</head>
-<body>
-    <h1>🔥 YouTube AI Agent</h1>
+model = GenerativeModel(MODEL_NAME)
 
-    <form method="post">
-        <textarea name="prompt" rows="10" cols="80" placeholder="Escribe tu idea..."></textarea><br><br>
-        <button type="submit">Generar</button>
-    </form>
 
-    <hr>
+# =========================
+# PROMPT ENGINE PRO
+# =========================
+def build_prompt(topic: str):
+    return f"""
+Eres un experto mundial en viralidad de YouTube en 2026.
 
-    <h2>Respuesta:</h2>
-    <pre style="white-space: pre-wrap;">{{response}}</pre>
-</body>
-</html>
+Devuelve SOLO JSON válido con esta estructura:
+
+{{
+  "title": "",
+  "hook": "",
+  "idea": "",
+  "thumbnail": "",
+  "description": "",
+  "hashtags": []
+}}
+
+REGLAS:
+- Máximo CTR posible
+- Estilo MrBeast + storytelling + psicología viral
+- Optimizado para retención >70%
+- Sin explicaciones, SOLO JSON
+
+Tema:
+{topic}
 """
 
+
+# =========================
+# FRONTEND SIMPLE
+# =========================
+HTML = """
+<h1>🚀 AI YouTube Engine PRO</h1>
+
+<form method="post">
+  <textarea name="topic" rows="6" cols="80" placeholder="Escribe tu idea..."></textarea><br><br>
+  <button type="submit">Generar</button>
+</form>
+
+<hr>
+
+<pre style="white-space: pre-wrap;">{{response}}</pre>
+"""
+
+
+# =========================
+# ROUTE WEB
+# =========================
 @app.route("/", methods=["GET", "POST"])
 def home():
     response = ""
 
     try:
         if request.method == "POST":
-            prompt = request.form.get("prompt", "")
+            topic = request.form.get("topic")
 
-            full_prompt = f"""
-Eres un experto en viralidad de YouTube en 2026.
+            prompt = build_prompt(topic)
 
-Devuelve:
+            result = model.generate_content(prompt)
 
-1. Título CTR máximo
-2. Hook de 15 segundos
-3. Idea del vídeo
-4. Descripción de miniatura
-
-Tema:
-{prompt}
-"""
-
-            result = model.generate_content(full_prompt)
             response = result.text
 
     except Exception as e:
-        response = f"Error interno: {str(e)}"
+        response = f"❌ ERROR: {str(e)}"
 
     return render_template_string(HTML, response=response)
 
 
+# =========================
+# API MODE (para apps futuras)
+# =========================
+@app.route("/api/generate", methods=["POST"])
+def api_generate():
+    try:
+        data = request.json
+        topic = data.get("topic", "")
+
+        prompt = build_prompt(topic)
+
+        result = model.generate_content(prompt)
+
+        return jsonify({
+            "success": True,
+            "data": result.text
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        })
+
+
+# =========================
+# START SERVER
+# =========================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=8080)
