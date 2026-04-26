@@ -1,58 +1,74 @@
 import os
-from flask import Flask, request, jsonify, render_template_string
+import json
+from flask import Flask, request, render_template_string, jsonify
 import vertexai
 from vertexai.generative_models import GenerativeModel
 
 app = Flask(__name__)
 
 # =========================
-# CONFIG VERTEX AI
+# VERTEX AI CONFIG
 # =========================
 PROJECT_ID = os.environ.get("GOOGLE_CLOUD_PROJECT", "youtube-ai-docker")
 LOCATION = "us-central1"
 
 vertexai.init(project=PROJECT_ID, location=LOCATION)
 
-# 🔥 TU MODELO (el que te funciona)
-MODEL_NAME = "gemini-2.5-pro"
-
-model = GenerativeModel(MODEL_NAME)
+# 🔥 tu modelo (el que ya te funciona)
+model = GenerativeModel("gemini-2.5-pro")
 
 
 # =========================
-# PROMPT ENGINE PRO
+# PROMPT ULTRA CONTROLADO
 # =========================
 def build_prompt(topic: str):
     return f"""
-Eres un experto mundial en viralidad de YouTube en 2026.
+Eres un sistema de generación de contenido viral de YouTube 2026.
 
-Devuelve SOLO JSON válido con esta estructura:
+OBLIGATORIO:
+- Responde SOLO JSON válido
+- Sin texto adicional
+- Sin markdown
+- Sin explicaciones
+
+FORMATO EXACTO:
 
 {{
   "title": "",
   "hook": "",
   "idea": "",
+  "script": "",
   "thumbnail": "",
   "description": "",
   "hashtags": []
 }}
 
 REGLAS:
-- Máximo CTR posible
-- Estilo MrBeast + storytelling + psicología viral
-- Optimizado para retención >70%
-- Sin explicaciones, SOLO JSON
+- CTR máximo
+- Estilo viral (retención + storytelling)
+- Hook potente en 15 segundos
+- Optimizado para YouTube Shorts + long form
 
-Tema:
+TEMA:
 {topic}
 """
 
 
 # =========================
-# FRONTEND SIMPLE
+# VALIDACIÓN JSON (CLAVE PRO)
+# =========================
+def safe_parse(text: str):
+    try:
+        return json.loads(text)
+    except Exception:
+        return None
+
+
+# =========================
+# FRONT WEB
 # =========================
 HTML = """
-<h1>🚀 AI YouTube Engine PRO</h1>
+<h1>🚀 AI YouTube Engine PRO (Phase 1)</h1>
 
 <form method="post">
   <textarea name="topic" rows="6" cols="80" placeholder="Escribe tu idea..."></textarea><br><br>
@@ -66,30 +82,44 @@ HTML = """
 
 
 # =========================
-# ROUTE WEB
+# CORE GENERATION
+# =========================
+def generate(topic: str):
+    prompt = build_prompt(topic)
+
+    result = model.generate_content(prompt)
+    text = result.text
+
+    parsed = safe_parse(text)
+
+    # 🔁 REINTENTO SI FALLA JSON
+    if parsed is None:
+        retry_prompt = build_prompt(topic) + "\nIMPORTANTE: SOLO JSON VÁLIDO SIN ERRORES."
+        retry = model.generate_content(retry_prompt)
+        parsed = safe_parse(retry.text)
+
+    return parsed or {
+        "error": "No se pudo generar JSON válido",
+        "raw": text
+    }
+
+
+# =========================
+# WEB ROUTE
 # =========================
 @app.route("/", methods=["GET", "POST"])
 def home():
     response = ""
 
-    try:
-        if request.method == "POST":
-            topic = request.form.get("topic")
-
-            prompt = build_prompt(topic)
-
-            result = model.generate_content(prompt)
-
-            response = result.text
-
-    except Exception as e:
-        response = f"❌ ERROR: {str(e)}"
+    if request.method == "POST":
+        topic = request.form.get("topic", "")
+        response = json.dumps(generate(topic), indent=2, ensure_ascii=False)
 
     return render_template_string(HTML, response=response)
 
 
 # =========================
-# API MODE (para apps futuras)
+# API (para futuro SaaS)
 # =========================
 @app.route("/api/generate", methods=["POST"])
 def api_generate():
@@ -97,13 +127,11 @@ def api_generate():
         data = request.json
         topic = data.get("topic", "")
 
-        prompt = build_prompt(topic)
-
-        result = model.generate_content(prompt)
+        result = generate(topic)
 
         return jsonify({
             "success": True,
-            "data": result.text
+            "data": result
         })
 
     except Exception as e:
@@ -114,7 +142,8 @@ def api_generate():
 
 
 # =========================
-# START SERVER
+# START
 # =========================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
