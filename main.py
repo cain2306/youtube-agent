@@ -1,26 +1,24 @@
-from flask import Flask
+from flask import Flask, request
 
 app = Flask(__name__)
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def home():
-    return "🚀 YouTube AI System Online"
-
-@app.route("/generate")
-def generate():
+    if request.method == "POST":
+        prompt = request.form.get("prompt", "")
+        return f"""
+        <h1>Respuesta del agente:</h1>
+        <p>{prompt}</p>
+        <br><a href="/">Volver</a>
+        """
+    
     return """
-🔥 IDEA VIRAL:
-Cómo ganar dinero con IA sin programar en 2026
-
-🎯 TÍTULO CTR:
-Gana DINERO con IA en 2026 SIN Programar (Método Viral)
-
-⚡ HOOK:
-La mayoría usará IA mal… mientras unos pocos la convierten en una máquina de dinero.
-
-🖼 MINIATURA:
-Persona sorprendida + dinero + robot IA + texto: “SIN PROGRAMAR”
-"""
+    <h1>YouTube AI Agent</h1>
+    <form method="post">
+        <textarea name="prompt" rows="8" cols="80" placeholder="Escribe tu prompt aquí"></textarea><br><br>
+        <button type="submit">Enviar</button>
+    </form>
+    """
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)
